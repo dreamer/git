@@ -137,29 +137,27 @@ int register_commit_graft(struct commit_graft *graft, int ignore_dups)
 struct commit_graft *read_graft_line(struct strbuf *line)
 {
 	/* The format is just "Commit Parent1 Parent2 ...\n" */
-	int i, len;
-	char *buf = line->buf;
+	int i, n;
+	const char *tail = NULL;
 	struct commit_graft *graft = NULL;
-	const int entry_size = GIT_SHA1_HEXSZ + 1;
 
 	strbuf_rtrim(line);
 	if (line->buf[0] == '#' || line->len == 0)
 		return NULL;
-	len = line->len;
-	if ((len + 1) % entry_size)
-		goto bad_graft_data;
-	i = (len + 1) / entry_size - 1;
+	/* count number of blanks to determine size of array to allocate */
+	for (i = 0, n = 0; i < line->len; i++)
+		if (isspace(line->buf[i]))
+			n++;
 	graft = xmalloc(st_add(sizeof(*graft),
-	                       st_mult(sizeof(struct object_id), i)));
-	graft->nr_parent = i;
-	if (get_oid_hex(buf, &graft->oid))
+	                       st_mult(sizeof(struct object_id), n)));
+	graft->nr_parent = n;
+	if (parse_oid_hex(line->buf, &graft->oid, &tail))
 		goto bad_graft_data;
-	for (i = GIT_SHA1_HEXSZ; i < len; i += entry_size) {
-		if (buf[i] != ' ')
+	for (i = 0; i < graft->nr_parent; i++)
+		if (!isspace(*tail++) || parse_oid_hex(tail, &graft->parent[i], &tail))
 			goto bad_graft_data;
-		if (get_sha1_hex(buf + i + 1, graft->parent[i/entry_size].hash))
-			goto bad_graft_data;
-	}
+	if (tail[0] != '\0')
+		goto bad_graft_data;
 	return graft;
 
 bad_graft_data:
