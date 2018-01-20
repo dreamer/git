@@ -107,4 +107,19 @@ test_expect_success 'gc runs without complaint' '
 	git gc
 '
 
+test_expect_success 'object-format not allowed in repo version=0' '
+	mkconfig 0 "objectFormat = sha-1" >.git/config &&
+	check_abort
+'
+
+test_expect_success 'object-format=sha-1 allowed' '
+	mkconfig 1 "objectFormat = sha-1" >.git/config &&
+	check_allow
+'
+
+test_expect_success 'object-format=foo unsupported' '
+	mkconfig 1 "objectFormat = foo" >.git/config &&
+	check_abort
+'
+
 test_done
