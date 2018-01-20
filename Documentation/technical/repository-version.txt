@@ -86,3 +86,11 @@ for testing format-1 compatibility.
 When the config key `extensions.preciousObjects` is set to `true`,
 objects in the repository MUST NOT be deleted (e.g., by `git-prune` or
 `git repack -d`).
+
+`objectFormat`
+~~~~~~~~~~~~~~
+
+This extension instructs Git to use a specific algorithm for addressing
+and interpreting objects in the object store. Currently, the only
+supported object format is `sha-1`.  See `hash-function-transition.txt`
+document for more detailed explanation.
