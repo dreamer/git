@@ -405,6 +405,31 @@ void setup_work_tree(void)
 	initialized = 1;
 }
 
+static int find_object_format(const char *value)
+{
+	int i;
+	for (i = GIT_HASH_SHA1; i < GIT_HASH_NALGOS; ++i) {
+		if (strcmp(value, hash_algos[i].name) == 0)
+			return i;
+	}
+	return GIT_HASH_UNKNOWN;
+}
+
+static void detect_object_format(struct repository_format *data,
+				 const char *value)
+{
+	if (data->version == 0)
+		die(_("invalid repository format version '%d'"), data->version);
+
+	data->hash_algo = find_object_format(value);
+	if (data->hash_algo == GIT_HASH_UNKNOWN) {
+		struct strbuf object_format = STRBUF_INIT;
+		strbuf_addf(&object_format, "objectformat = %s", value);
+		string_list_append(&data->unknown_extensions, object_format.buf);
+		strbuf_release(&object_format);
+	}
+}
+
 static int check_repo_format(const char *var, const char *value, void *vdata)
 {
 	struct repository_format *data = vdata;
@@ -422,6 +447,8 @@ static int check_repo_format(const char *var, const char *value, void *vdata)
 			;
 		else if (!strcmp(ext, "preciousobjects"))
 			data->precious_objects = git_config_bool(var, value);
+		else if (!strcmp(ext, "objectformat"))
+			detect_object_format(data, value);
 		else
 			string_list_append(&data->unknown_extensions, ext);
 	} else if (strcmp(var, "core.bare") == 0) {
