@@ -1321,7 +1321,7 @@ int pretend_object_file(void *buf, unsigned long len, enum object_type type,
 	struct cached_object *co;
 
 	hash_object_file(buf, len, typename(type), oid);
-	if (has_sha1_file(oid->hash) || find_cached_object(oid->hash))
+	if (has_object_file(oid) || find_cached_object(oid->hash))
 		return 0;
 	ALLOC_GROW(cached_objects, cached_object_nr + 1, cached_object_alloc);
 	co = &cached_objects[cached_object_nr++];
@@ -1699,24 +1699,17 @@ int force_object_loose(const struct object_id *oid, time_t mtime)
 	return ret;
 }
 
-int has_sha1_file_with_flags(const unsigned char *sha1, int flags)
+int has_object_file_with_flags(const struct object_id *oid, int flags)
 {
-	struct object_id oid;
 	if (!startup_info->have_repository)
 		return 0;
-	hashcpy(oid.hash, sha1);
-	return oid_object_info_extended(&oid, NULL,
+	return oid_object_info_extended(oid, NULL,
 					flags | OBJECT_INFO_SKIP_CACHED) >= 0;
 }
 
 int has_object_file(const struct object_id *oid)
 {
-	return has_sha1_file(oid->hash);
-}
-
-int has_object_file_with_flags(const struct object_id *oid, int flags)
-{
-	return has_sha1_file_with_flags(oid->hash, flags);
+	return has_object_file_with_flags(oid, 0);
 }
 
 static void check_tree(const void *buf, size_t size)
