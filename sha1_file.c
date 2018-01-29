@@ -856,26 +856,26 @@ int git_open_cloexec(const char *name, int flags)
 }
 
 /*
- * Find "sha1" as a loose object in the local repository or in an alternate.
+ * Find "oid" as a loose object in the local repository or in an alternate.
  * Returns 0 on success, negative on failure.
  *
  * The "path" out-parameter will give the path of the object we found (if any).
  * Note that it may point to static storage and is only valid until another
  * call to sha1_file_name(), etc.
  */
-static int stat_sha1_file(const unsigned char *sha1, struct stat *st,
-			  const char **path)
+static int stat_object_file(const struct object_id *oid, struct stat *st,
+			    const char **path)
 {
 	struct alternate_object_database *alt;
 
-	*path = sha1_file_name(sha1);
+	*path = sha1_file_name(oid->hash);
 	if (!lstat(*path, st))
 		return 0;
 
 	prepare_alt_odb();
 	errno = ENOENT;
 	for (alt = alt_odb_list; alt; alt = alt->next) {
-		*path = alt_sha1_path(alt, sha1);
+		*path = alt_sha1_path(alt, oid->hash);
 		if (!lstat(*path, st))
 			return 0;
 	}
@@ -884,7 +884,7 @@ static int stat_sha1_file(const unsigned char *sha1, struct stat *st,
 }
 
 /*
- * Like stat_sha1_file(), but actually open the object and return the
+ * Like stat_object_file(), but actually open the object and return the
  * descriptor. See the caveats on the "path" parameter above.
  */
 static int open_sha1_file(const unsigned char *sha1, const char **path)
@@ -1161,7 +1161,7 @@ static int loose_object_info(const struct object_id *oid,
 	if (!oi->typep && !oi->typename && !oi->sizep && !oi->contentp) {
 		const char *path;
 		struct stat st;
-		if (stat_sha1_file(oid->hash, &st, &path) < 0)
+		if (stat_object_file(oid, &st, &path) < 0)
 			return -1;
 		if (oi->disk_sizep)
 			*oi->disk_sizep = st.st_size;
@@ -1362,7 +1362,7 @@ void *read_object_file_extended(const struct object_id *oid,
 		die("replacement %s not found for %s",
 		    oid_to_hex(repl), oid_to_hex(oid));
 
-	if (!stat_sha1_file(repl->hash, &st, &path))
+	if (!stat_object_file(repl, &st, &path))
 		die("loose object %s (stored in %s) is corrupt",
 		    oid_to_hex(repl), path);
 
