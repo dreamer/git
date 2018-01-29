@@ -1136,9 +1136,8 @@ int parse_sha1_header(const char *hdr, unsigned long *sizep)
 	return parse_sha1_header_extended(hdr, &oi, 0);
 }
 
-static int sha1_loose_object_info(const unsigned char *sha1,
-				  struct object_info *oi,
-				  int flags)
+static int loose_object_info(const struct object_id *oid,
+			     struct object_info *oi, int flags)
 {
 	int status = 0;
 	unsigned long mapsize;
@@ -1162,14 +1161,14 @@ static int sha1_loose_object_info(const unsigned char *sha1,
 	if (!oi->typep && !oi->typename && !oi->sizep && !oi->contentp) {
 		const char *path;
 		struct stat st;
-		if (stat_sha1_file(sha1, &st, &path) < 0)
+		if (stat_sha1_file(oid->hash, &st, &path) < 0)
 			return -1;
 		if (oi->disk_sizep)
 			*oi->disk_sizep = st.st_size;
 		return 0;
 	}
 
-	map = map_sha1_file(sha1, &mapsize);
+	map = map_sha1_file(oid->hash, &mapsize);
 	if (!map)
 		return -1;
 
@@ -1181,22 +1180,22 @@ static int sha1_loose_object_info(const unsigned char *sha1,
 	if ((flags & OBJECT_INFO_ALLOW_UNKNOWN_TYPE)) {
 		if (unpack_sha1_header_to_strbuf(&stream, map, mapsize, hdr, sizeof(hdr), &hdrbuf) < 0)
 			status = error("unable to unpack %s header with --allow-unknown-type",
-				       sha1_to_hex(sha1));
+				       oid_to_hex(oid));
 	} else if (unpack_sha1_header(&stream, map, mapsize, hdr, sizeof(hdr)) < 0)
 		status = error("unable to unpack %s header",
-			       sha1_to_hex(sha1));
+			       oid_to_hex(oid));
 	if (status < 0)
 		; /* Do nothing */
 	else if (hdrbuf.len) {
 		if ((status = parse_sha1_header_extended(hdrbuf.buf, oi, flags)) < 0)
 			status = error("unable to parse %s header with --allow-unknown-type",
-				       sha1_to_hex(sha1));
+				       oid_to_hex(oid));
 	} else if ((status = parse_sha1_header_extended(hdr, oi, flags)) < 0)
-		status = error("unable to parse %s header", sha1_to_hex(sha1));
+		status = error("unable to parse %s header", oid_to_hex(oid));
 
 	if (status >= 0 && oi->contentp) {
 		*oi->contentp = unpack_sha1_rest(&stream, hdr,
-						 *oi->sizep, sha1);
+						 *oi->sizep, oid->hash);
 		if (!*oi->contentp) {
 			git_inflate_end(&stream);
 			status = -1;
@@ -1250,7 +1249,7 @@ int oid_object_info_extended(const struct object_id *oid, struct object_info *oi
 
 	if (!find_pack_entry(real->hash, &e)) {
 		/* Most likely it's a loose object. */
-		if (!sha1_loose_object_info(real->hash, oi, flags))
+		if (!loose_object_info(real, oi, flags))
 			return 0;
 
 		/* Not a loose object; someone else may have just packed it. */
