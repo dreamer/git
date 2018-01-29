@@ -1007,7 +1007,7 @@ static int want_object_in_pack(const struct object_id *oid,
 	struct mru_entry *entry;
 	int want;
 
-	if (!exclude && local && has_loose_object_nonlocal(oid->hash))
+	if (!exclude && local && has_loose_object_nonlocal(oid))
 		return 0;
 
 	/*
