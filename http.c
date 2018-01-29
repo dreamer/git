@@ -2165,9 +2165,9 @@ static size_t fwrite_sha1_file(char *ptr, size_t eltsize, size_t nmemb,
 }
 
 struct http_object_request *new_http_object_request(const char *base_url,
-	unsigned char *sha1)
+						    struct object_id *oid)
 {
-	char *hex = sha1_to_hex(sha1);
+	char *hex = oid_to_hex(oid);
 	const char *filename;
 	char prevfile[PATH_MAX];
 	int prevlocal;
@@ -2177,10 +2177,10 @@ struct http_object_request *new_http_object_request(const char *base_url,
 	struct http_object_request *freq;
 
 	freq = xcalloc(1, sizeof(*freq));
-	hashcpy(freq->sha1, sha1);
+	oidcpy(&freq->oid, oid);
 	freq->localfile = -1;
 
-	filename = sha1_file_name(sha1);
+	filename = sha1_file_name(oid->hash);
 	snprintf(freq->tmpfile, sizeof(freq->tmpfile),
 		 "%s.temp", filename);
 
@@ -2318,17 +2318,17 @@ int finish_http_object_request(struct http_object_request *freq)
 	}
 
 	git_inflate_end(&freq->stream);
-	git_SHA1_Final(freq->real_sha1, &freq->c);
+	git_SHA1_Final(freq->real_oid.hash, &freq->c);
 	if (freq->zret != Z_STREAM_END) {
 		unlink_or_warn(freq->tmpfile);
 		return -1;
 	}
-	if (hashcmp(freq->sha1, freq->real_sha1)) {
+	if (oidcmp(&freq->oid, &freq->real_oid)) {
 		unlink_or_warn(freq->tmpfile);
 		return -1;
 	}
-	freq->rename =
-		finalize_object_file(freq->tmpfile, sha1_file_name(freq->sha1));
+	freq->rename = finalize_object_file(freq->tmpfile,
+					    sha1_file_name(freq->oid.hash));
 
 	return freq->rename;
 }
