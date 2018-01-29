@@ -933,11 +933,11 @@ extern void check_repository_format(void);
 
 /*
  * Return the name of the file in the local object database that would
- * be used to store a loose object with the specified sha1.  The
+ * be used to store a loose object with the specified oid.  The
  * return value is a pointer to a statically allocated buffer that is
  * overwritten each time the function is called.
  */
-extern const char *sha1_file_name(const unsigned char *sha1);
+extern const char *object_file_name(const struct object_id *oid);
 
 /*
  * Return an abbreviated sha1 unique within this repository's object database.

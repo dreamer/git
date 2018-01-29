@@ -309,12 +309,12 @@ out:
 	return ret;
 }
 
-static void fill_sha1_path(struct strbuf *buf, const unsigned char *sha1)
+static void fill_object_path(struct strbuf *buf, const struct object_id *oid)
 {
 	int i;
 	for (i = 0; i < the_hash_algo->rawsz; i++) {
 		static char hex[] = "0123456789abcdef";
-		unsigned int val = sha1[i];
+		unsigned int val = oid->hash[i];
 		strbuf_addch(buf, hex[val >> 4]);
 		strbuf_addch(buf, hex[val & 0xf]);
 		if (!i)
@@ -322,14 +322,14 @@ static void fill_sha1_path(struct strbuf *buf, const unsigned char *sha1)
 	}
 }
 
-const char *sha1_file_name(const unsigned char *sha1)
+const char *object_file_name(const struct object_id *oid)
 {
 	static struct strbuf buf = STRBUF_INIT;
 
 	strbuf_reset(&buf);
 	strbuf_addf(&buf, "%s/", get_object_directory());
 
-	fill_sha1_path(&buf, sha1);
+	fill_object_path(&buf, oid);
 	return buf.buf;
 }
 
@@ -339,11 +339,11 @@ struct strbuf *alt_scratch_buf(struct alternate_object_database *alt)
 	return &alt->scratch;
 }
 
-static const char *alt_sha1_path(struct alternate_object_database *alt,
-				 const unsigned char *sha1)
+static const char *alt_object_path(struct alternate_object_database *alt,
+				   const struct object_id *oid)
 {
 	struct strbuf *buf = alt_scratch_buf(alt);
-	fill_sha1_path(buf, sha1);
+	fill_object_path(buf, oid);
 	return buf->buf;
 }
 
@@ -711,7 +711,7 @@ int check_and_freshen_file(const char *fn, int freshen)
 
 static int check_and_freshen_local(const struct object_id *oid, int freshen)
 {
-	return check_and_freshen_file(sha1_file_name(oid->hash), freshen);
+	return check_and_freshen_file(object_file_name(oid), freshen);
 }
 
 static int check_and_freshen_nonlocal(const struct object_id *oid, int freshen)
@@ -719,7 +719,7 @@ static int check_and_freshen_nonlocal(const struct object_id *oid, int freshen)
 	struct alternate_object_database *alt;
 	prepare_alt_odb();
 	for (alt = alt_odb_list; alt; alt = alt->next) {
-		const char *path = alt_sha1_path(alt, oid->hash);
+		const char *path = alt_object_path(alt, oid);
 		if (check_and_freshen_file(path, freshen))
 			return 1;
 	}
@@ -861,21 +861,21 @@ int git_open_cloexec(const char *name, int flags)
  *
  * The "path" out-parameter will give the path of the object we found (if any).
  * Note that it may point to static storage and is only valid until another
- * call to sha1_file_name(), etc.
+ * call to object_file_name(), etc.
  */
 static int stat_object_file(const struct object_id *oid, struct stat *st,
 			    const char **path)
 {
 	struct alternate_object_database *alt;
 
-	*path = sha1_file_name(oid->hash);
+	*path = object_file_name(oid);
 	if (!lstat(*path, st))
 		return 0;
 
 	prepare_alt_odb();
 	errno = ENOENT;
 	for (alt = alt_odb_list; alt; alt = alt->next) {
-		*path = alt_sha1_path(alt, oid->hash);
+		*path = alt_object_path(alt, oid);
 		if (!lstat(*path, st))
 			return 0;
 	}
@@ -893,7 +893,7 @@ static int open_object_file(const struct object_id *oid, const char **path)
 	struct alternate_object_database *alt;
 	int most_interesting_errno;
 
-	*path = sha1_file_name(oid->hash);
+	*path = object_file_name(oid);
 	fd = git_open(*path);
 	if (fd >= 0)
 		return fd;
@@ -901,7 +901,7 @@ static int open_object_file(const struct object_id *oid, const char **path)
 
 	prepare_alt_odb();
 	for (alt = alt_odb_list; alt; alt = alt->next) {
-		*path = alt_sha1_path(alt, oid->hash);
+		*path = alt_object_path(alt, oid);
 		fd = git_open(*path);
 		if (fd >= 0)
 			return fd;
@@ -1560,7 +1560,7 @@ static int write_loose_object(const struct object_id *oid, char *hdr,
 	git_hash_ctx c;
 	struct object_id parano_oid;
 	static struct strbuf tmp_file = STRBUF_INIT;
-	const char *filename = sha1_file_name(oid->hash);
+	const char *filename = object_file_name(oid);
 
 	fd = create_tmpfile(&tmp_file, filename);
 	if (fd < 0) {

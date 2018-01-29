@@ -2180,7 +2180,7 @@ struct http_object_request *new_http_object_request(const char *base_url,
 	oidcpy(&freq->oid, oid);
 	freq->localfile = -1;
 
-	filename = sha1_file_name(oid->hash);
+	filename = object_file_name(oid);
 	snprintf(freq->tmpfile, sizeof(freq->tmpfile),
 		 "%s.temp", filename);
 
@@ -2328,7 +2328,7 @@ int finish_http_object_request(struct http_object_request *freq)
 		return -1;
 	}
 	freq->rename = finalize_object_file(freq->tmpfile,
-					    sha1_file_name(freq->oid.hash));
+					    object_file_name(&freq->oid));
 
 	return freq->rename;
 }
