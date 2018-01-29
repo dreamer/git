@@ -1229,7 +1229,9 @@ extern int force_object_loose(const struct object_id *oid, time_t mtime);
 
 extern int git_open_cloexec(const char *name, int flags);
 #define git_open(name) git_open_cloexec(name, O_RDONLY)
-extern void *map_sha1_file(const unsigned char *sha1, unsigned long *size);
+
+extern void *map_object_file(const struct object_id *oid, unsigned long *size);
+
 extern int unpack_sha1_header(git_zstream *stream, unsigned char *map, unsigned long mapsize, void *buffer, unsigned long bufsiz);
 extern int parse_sha1_header(const char *hdr, unsigned long *sizep);
 

@@ -887,13 +887,13 @@ static int stat_object_file(const struct object_id *oid, struct stat *st,
  * Like stat_object_file(), but actually open the object and return the
  * descriptor. See the caveats on the "path" parameter above.
  */
-static int open_sha1_file(const unsigned char *sha1, const char **path)
+static int open_object_file(const struct object_id *oid, const char **path)
 {
 	int fd;
 	struct alternate_object_database *alt;
 	int most_interesting_errno;
 
-	*path = sha1_file_name(sha1);
+	*path = sha1_file_name(oid->hash);
 	fd = git_open(*path);
 	if (fd >= 0)
 		return fd;
@@ -901,7 +901,7 @@ static int open_sha1_file(const unsigned char *sha1, const char **path)
 
 	prepare_alt_odb();
 	for (alt = alt_odb_list; alt; alt = alt->next) {
-		*path = alt_sha1_path(alt, sha1);
+		*path = alt_sha1_path(alt, oid->hash);
 		fd = git_open(*path);
 		if (fd >= 0)
 			return fd;
@@ -914,10 +914,10 @@ static int open_sha1_file(const unsigned char *sha1, const char **path)
 
 /*
  * Map the loose object at "path" if it is not NULL, or the path found by
- * searching for a loose object named "sha1".
+ * searching for a loose object named "oid".
  */
-static void *map_sha1_file_1(const char *path,
-			     const unsigned char *sha1,
+static void *map_object_file_1(const char *path,
+			     const struct object_id *oid,
 			     unsigned long *size)
 {
 	void *map;
@@ -926,7 +926,7 @@ static void *map_sha1_file_1(const char *path,
 	if (path)
 		fd = git_open(path);
 	else
-		fd = open_sha1_file(sha1, &path);
+		fd = open_object_file(oid, &path);
 	map = NULL;
 	if (fd >= 0) {
 		struct stat st;
@@ -945,9 +945,9 @@ static void *map_sha1_file_1(const char *path,
 	return map;
 }
 
-void *map_sha1_file(const unsigned char *sha1, unsigned long *size)
+void *map_object_file(const struct object_id *oid, unsigned long *size)
 {
-	return map_sha1_file_1(NULL, sha1, size);
+	return map_object_file_1(NULL, oid, size);
 }
 
 static int unpack_sha1_short_header(git_zstream *stream,
@@ -1168,7 +1168,7 @@ static int loose_object_info(const struct object_id *oid,
 		return 0;
 	}
 
-	map = map_sha1_file(oid->hash, &mapsize);
+	map = map_object_file(oid, &mapsize);
 	if (!map)
 		return -1;
 
@@ -2161,7 +2161,7 @@ int read_loose_object(const char *path,
 
 	*contents = NULL;
 
-	map = map_sha1_file_1(path, NULL, &mapsize);
+	map = map_object_file_1(path, NULL, &mapsize);
 	if (!map) {
 		error_errno("unable to mmap %s", path);
 		goto out;
