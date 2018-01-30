@@ -141,7 +141,7 @@ const struct git_hash_algo hash_algos[GIT_HASH_NALGOS] = {
  * application).
  */
 static struct cached_object {
-	unsigned char sha1[20];
+	struct object_id oid;
 	enum object_type type;
 	void *buf;
 	unsigned long size;
@@ -155,13 +155,13 @@ static struct cached_object empty_tree = {
 	0
 };
 
-static struct cached_object *find_cached_object(const unsigned char *sha1)
+static struct cached_object *find_cached_object(const struct object_id *oid)
 {
 	int i;
 	struct cached_object *co = cached_objects;
 
 	for (i = 0; i < cached_object_nr; i++, co++) {
-		if (!hashcmp(co->sha1, sha1))
+		if (!oidcmp(&co->oid, oid))
 			return co;
 	}
 	if (!hashcmp(sha1, empty_tree.sha1))
@@ -1264,7 +1264,7 @@ int oid_object_info_extended(const struct object_id *oid, struct object_info *oi
 		oi = &blank_oi;
 
 	if (!(flags & OBJECT_INFO_SKIP_CACHED)) {
-		struct cached_object *co = find_cached_object(real->hash);
+		struct cached_object *co = find_cached_object(real);
 		if (co) {
 			if (oi->typep)
 				*(oi->typep) = co->type;
@@ -1356,7 +1356,7 @@ int pretend_object_file(void *buf, unsigned long len, enum object_type type,
 	struct cached_object *co;
 
 	hash_object_file(buf, len, typename(type), oid);
-	if (has_object_file(oid) || find_cached_object(oid->hash))
+	if (has_object_file(oid) || find_cached_object(oid))
 		return 0;
 	ALLOC_GROW(cached_objects, cached_object_nr + 1, cached_object_alloc);
 	co = &cached_objects[cached_object_nr++];
