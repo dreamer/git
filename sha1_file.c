@@ -141,30 +141,30 @@ const struct git_hash_algo hash_algos[GIT_HASH_NALGOS] = {
  * application).
  */
 static struct cached_object {
-	unsigned char sha1[20];
+	struct object_id oid;
 	enum object_type type;
 	void *buf;
 	unsigned long size;
 } *cached_objects;
 static int cached_object_nr, cached_object_alloc;
 
-static struct cached_object empty_tree = {
-	EMPTY_TREE_SHA1_BIN_LITERAL,
+static struct cached_object empty_tree = { // rename to empty_cached_object
+	{ EMPTY_TREE_SHA1_BIN_LITERAL }, // pbo - this is bad :/
 	OBJ_TREE,
 	"",
 	0
 };
 
-static struct cached_object *find_cached_object(const unsigned char *sha1)
+static struct cached_object *find_cached_object(const struct object_id *oid)
 {
 	int i;
 	struct cached_object *co = cached_objects;
 
 	for (i = 0; i < cached_object_nr; i++, co++) {
-		if (!hashcmp(co->sha1, sha1))
+		if (!oidcmp(&co->oid, oid))
 			return co;
 	}
-	if (!hashcmp(sha1, empty_tree.sha1))
+	if (!oidcmp(oid, &empty_tree.oid))
 		return &empty_tree;
 	return NULL;
 }
@@ -1264,7 +1264,7 @@ int oid_object_info_extended(const struct object_id *oid, struct object_info *oi
 		oi = &blank_oi;
 
 	if (!(flags & OBJECT_INFO_SKIP_CACHED)) {
-		struct cached_object *co = find_cached_object(real->hash);
+		struct cached_object *co = find_cached_object(real);
 		if (co) {
 			if (oi->typep)
 				*(oi->typep) = co->type;
@@ -1333,19 +1333,16 @@ int oid_object_info(const struct object_id *oid, unsigned long *sizep)
 	return type;
 }
 
-static void *read_object(const unsigned char *sha1, enum object_type *type,
+static void *read_object(const struct object_id *oid, enum object_type *type,
 			 unsigned long *size)
 {
-	struct object_id oid;
 	struct object_info oi = OBJECT_INFO_INIT;
 	void *content;
 	oi.typep = type;
 	oi.sizep = size;
 	oi.contentp = &content;
 
-	hashcpy(oid.hash, sha1);
-
-	if (oid_object_info_extended(&oid, &oi, 0) < 0)
+	if (oid_object_info_extended(oid, &oi, 0) < 0)
 		return NULL;
 	return content;
 }
@@ -1356,7 +1353,7 @@ int pretend_object_file(void *buf, unsigned long len, enum object_type type,
 	struct cached_object *co;
 
 	hash_object_file(buf, len, typename(type), oid);
-	if (has_object_file(oid) || find_cached_object(oid->hash))
+	if (has_object_file(oid) || find_cached_object(oid))
 		return 0;
 	ALLOC_GROW(cached_objects, cached_object_nr + 1, cached_object_alloc);
 	co = &cached_objects[cached_object_nr++];
@@ -1364,7 +1361,7 @@ int pretend_object_file(void *buf, unsigned long len, enum object_type type,
 	co->type = type;
 	co->buf = xmalloc(len);
 	memcpy(co->buf, buf, len);
-	hashcpy(co->sha1, oid->hash);
+	oidcpy(&co->oid, oid);
 	return 0;
 }
 
@@ -1386,7 +1383,7 @@ void *read_object_file_extended(const struct object_id *oid,
 						      : oid;
 
 	errno = 0;
-	data = read_object(repl->hash, type, size);
+	data = read_object(repl, type, size);
 	if (data)
 		return data;
 
@@ -1723,7 +1720,7 @@ int force_object_loose(const struct object_id *oid, time_t mtime)
 
 	if (has_loose_object(oid))
 		return 0;
-	buf = read_object(oid->hash, &type, &len);
+	buf = read_object(oid, &type, &len);
 	if (!buf)
 		return error("cannot read sha1_file for %s", oid_to_hex(oid));
 	hdrlen = xsnprintf(hdr, sizeof(hdr), "%s %lu", typename(type), len) + 1;
