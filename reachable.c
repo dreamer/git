@@ -107,7 +107,7 @@ static int add_recent_loose(const struct object_id *oid,
 			    const char *path, void *data)
 {
 	struct stat st;
-	struct object *obj = lookup_object(oid->hash);
+	struct object *obj = lookup_object(oid);
 
 	if (obj && obj->flags & SEEN)
 		return 0;
@@ -132,7 +132,7 @@ static int add_recent_packed(const struct object_id *oid,
 			     struct packed_git *p, uint32_t pos,
 			     void *data)
 {
-	struct object *obj = lookup_object(oid->hash);
+	struct object *obj = lookup_object(oid);
 
 	if (obj && obj->flags & SEEN)
 		return 0;

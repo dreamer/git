@@ -194,9 +194,9 @@ int read_tree(struct tree *tree, int stage, struct pathspec *match,
 
 struct tree *lookup_tree(const struct object_id *oid)
 {
-	struct object *obj = lookup_object(oid->hash);
+	struct object *obj = lookup_object(oid);
 	if (!obj)
-		return create_object(oid->hash, alloc_tree_node());
+		return create_object(oid, alloc_tree_node());
 	return object_as_type(obj, OBJ_TREE, 0);
 }
 

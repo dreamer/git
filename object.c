@@ -82,7 +82,7 @@ static void insert_obj_hash(struct object *obj, struct object **hash, unsigned i
  * Look up the record for the given sha1 in the hash map stored in
  * obj_hash.  Return NULL if it was not found.
  */
-struct object *lookup_object(const unsigned char *sha1)
+struct object *lookup_object(const struct object_id *oid)
 {
 	unsigned int i, first;
 	struct object *obj;
@@ -90,9 +90,9 @@ struct object *lookup_object(const unsigned char *sha1)
 	if (!obj_hash)
 		return NULL;
 
-	first = i = hash_obj(sha1, obj_hash_size);
+	first = i = hash_obj(oid->hash, obj_hash_size);
 	while ((obj = obj_hash[i]) != NULL) {
-		if (!hashcmp(sha1, obj->oid.hash))
+		if (!oidcmp(oid, &obj->oid))
 			break;
 		i++;
 		if (i == obj_hash_size)
@@ -136,13 +136,13 @@ static void grow_object_hash(void)
 	obj_hash_size = new_hash_size;
 }
 
-void *create_object(const unsigned char *sha1, void *o)
+void *create_object(const struct object_id *oid, void *o)
 {
 	struct object *obj = o;
 
 	obj->parsed = 0;
 	obj->flags = 0;
-	hashcpy(obj->oid.hash, sha1);
+	oidcpy(&obj->oid, oid);
 
 	if (obj_hash_size - 1 <= nr_objs * 2)
 		grow_object_hash();
@@ -171,11 +171,11 @@ void *object_as_type(struct object *obj, enum object_type type, int quiet)
 	}
 }
 
-struct object *lookup_unknown_object(const unsigned char *sha1)
+struct object *lookup_unknown_object(const struct object_id *oid)
 {
-	struct object *obj = lookup_object(sha1);
+	struct object *obj = lookup_object(oid);
 	if (!obj)
-		obj = create_object(sha1, alloc_object_node());
+		obj = create_object(oid, alloc_object_node());
 	return obj;
 }
 
@@ -248,7 +248,7 @@ struct object *parse_object(const struct object_id *oid)
 	void *buffer;
 	struct object *obj;
 
-	obj = lookup_object(oid->hash);
+	obj = lookup_object(oid);
 	if (obj && obj->parsed)
 		return obj;
 
@@ -260,7 +260,7 @@ struct object *parse_object(const struct object_id *oid)
 			return NULL;
 		}
 		parse_blob_buffer(lookup_blob(oid), NULL, 0);
-		return lookup_object(oid->hash);
+		return lookup_object(oid);
 	}
 
 	buffer = read_object_file(oid, &type, &size);

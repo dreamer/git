@@ -554,7 +554,7 @@ static int get_reachable_list(struct object_array *src,
 		if (namebuf[40] != '\n' || get_oid_hex(namebuf, &sha1))
 			break;
 
-		o = lookup_object(sha1.hash);
+		o = lookup_object(&sha1);
 		if (o && o->type == OBJ_COMMIT) {
 			o->flags &= ~TMP_MARK;
 		}
@@ -896,7 +896,7 @@ static void receive_needs(void)
 static int mark_our_ref(const char *refname, const char *refname_full,
 			const struct object_id *oid)
 {
-	struct object *o = lookup_unknown_object(oid->hash);
+	struct object *o = lookup_unknown_object(oid);
 
 	if (ref_is_hidden(refname, refname_full)) {
 		o->flags |= HIDDEN_REF;

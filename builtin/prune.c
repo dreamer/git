@@ -39,7 +39,7 @@ static int prune_object(const struct object_id *oid, const char *fullpath,
 	 * Do we know about this object?
 	 * It must have been reachable
 	 */
-	if (lookup_object(oid->hash))
+	if (lookup_object(oid))
 		return 0;
 
 	if (lstat(fullpath, &st)) {
