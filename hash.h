@@ -53,11 +53,19 @@
 /* SHA-1 */
 #define GIT_HASH_SHA1 1
 /* Number of algorithms supported (including unknown). */
-#define GIT_HASH_NALGOS (GIT_HASH_SHA1 + 1)
+#if defined(SHA1_OPENSSL)
+#define GIT_HASH_SHA256 2
+#define GIT_HASH_NALGOS 3
+#else
+#define GIT_HASH_NALGOS 2
+#endif
 
 /* A suitably aligned type for stack allocations of hash contexts. */
 union git_hash_ctx {
 	git_SHA_CTX sha1;
+#if defined(SHA1_OPENSSL)
+	SHA256_CTX sha256;
+#endif
 };
 typedef union git_hash_ctx git_hash_ctx;
 

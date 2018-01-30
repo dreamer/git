@@ -38,7 +38,8 @@ const struct object_id null_oid;
 const struct object_id empty_tree_oid = {
 	EMPTY_TREE_SHA1_BIN_LITERAL
 };
-const struct object_id empty_blob_oid = {
+
+const struct object_id empty_blob_sha1_oid = {
 	EMPTY_BLOB_SHA1_BIN_LITERAL
 };
 
@@ -56,6 +57,27 @@ static void git_hash_sha1_final(unsigned char *hash, void *ctx)
 {
 	git_SHA1_Final(hash, (git_SHA_CTX *)ctx);
 }
+
+#if defined(SHA1_OPENSSL)
+const struct object_id empty_blob_sha256_oid = {
+	EMPTY_BLOB_SHA256_BIN_LITERAL
+};
+
+static void git_hash_sha256_init(void *ctx)
+{
+	SHA256_Init((SHA256_CTX *)ctx);
+}
+
+static void git_hash_sha256_update(void *ctx, const void *data, size_t len)
+{
+	SHA256_Update((SHA256_CTX *)ctx, data, len);
+}
+
+static void git_hash_sha256_final(unsigned char *hash, void *ctx)
+{
+	SHA256_Final(hash, (SHA256_CTX *)ctx);
+}
+#endif
 
 static void git_hash_unknown_init(void *ctx)
 {
@@ -94,8 +116,22 @@ const struct git_hash_algo hash_algos[GIT_HASH_NALGOS] = {
 		git_hash_sha1_update,
 		git_hash_sha1_final,
 		&empty_tree_oid,
-		&empty_blob_oid,
+		&empty_blob_sha1_oid,
 	},
+#if defined(SHA1_OPENSSL)
+	{
+		"sha-256",
+		/* "s256", big-endian */
+		0x73323536,
+		GIT_SHA256_RAWSZ,
+		GIT_SHA256_HEXSZ,
+		git_hash_sha256_init,
+		git_hash_sha256_update,
+		git_hash_sha256_final,
+		&empty_tree_oid,
+		&empty_blob_sha256_oid,
+	},
+#endif
 };
 
 /*
@@ -1430,7 +1466,6 @@ static void write_object_file_prepare(const void *buf, unsigned long len,
 	/* Generate the header */
 	*hdrlen = xsnprintf(hdr, *hdrlen, "%s %lu", type, len)+1;
 
-	/* Sha1.. */
 	the_hash_algo->init_fn(&c);
 	the_hash_algo->update_fn(&c, hdr, *hdrlen);
 	the_hash_algo->update_fn(&c, buf, len);

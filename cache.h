@@ -45,9 +45,12 @@ unsigned long git_deflate_bound(git_zstream *, unsigned long);
 #define GIT_SHA1_RAWSZ 20
 #define GIT_SHA1_HEXSZ (2 * GIT_SHA1_RAWSZ)
 
+#define GIT_SHA256_RAWSZ 32
+#define GIT_SHA256_HEXSZ (2 * GIT_SHA256_RAWSZ)
+
 /* The length in byte and in hex digits of the largest possible hash value. */
-#define GIT_MAX_RAWSZ GIT_SHA1_RAWSZ
-#define GIT_MAX_HEXSZ GIT_SHA1_HEXSZ
+#define GIT_MAX_RAWSZ GIT_SHA256_RAWSZ
+#define GIT_MAX_HEXSZ GIT_SHA256_HEXSZ
 
 struct object_id {
 	unsigned char hash[GIT_MAX_RAWSZ];
@@ -1021,7 +1024,12 @@ extern const struct object_id empty_tree_oid;
 #define EMPTY_BLOB_SHA1_BIN_LITERAL \
 	"\xe6\x9d\xe2\x9b\xb2\xd1\xd6\x43\x4b\x8b" \
 	"\x29\xae\x77\x5a\xd8\xc2\xe4\x8c\x53\x91"
-extern const struct object_id empty_blob_oid;
+
+#define EMPTY_BLOB_SHA256_HEX \
+	"473a0f4c3be8a93681a267e3b1e9a7dcda1185436fe141f7749120a303721813"
+#define EMPTY_BLOB_SHA256_BIN_LITERAL \
+	"\x47\x3a\x0f\x4c\x3b\xe8\xa9\x36\x81\xa2\x67\xe3\xb1\xe9\xa7\xdc" \
+	"\xda\x11\x85\x43\x6f\xe1\x41\xf7\x74\x91\x20\xa3\x03\x72\x18\x13"
 
 static inline int is_empty_blob_sha1(const unsigned char *sha1)
 {
