@@ -95,6 +95,9 @@ struct git_hash_algo {
 
 	/* The OID of the empty blob. */
 	const struct object_id *empty_blob;
+
+	/* The hex representation of the empty tree OID. */
+	const char *empty_tree_hex;
 };
 extern const struct git_hash_algo hash_algos[GIT_HASH_NALGOS];
 

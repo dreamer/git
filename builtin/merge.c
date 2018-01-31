@@ -289,7 +289,7 @@ static void read_empty(unsigned const char *sha1, int verbose)
 		args[i++] = "-v";
 	args[i++] = "-m";
 	args[i++] = "-u";
-	args[i++] = EMPTY_TREE_SHA1_HEX;
+	args[i++] = the_hash_algo->empty_tree_hex;
 	args[i++] = sha1_to_hex(sha1);
 	args[i] = NULL;
 

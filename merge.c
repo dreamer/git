@@ -14,7 +14,7 @@ static const char *merge_argument(struct commit *commit)
 	if (commit)
 		return oid_to_hex(&commit->object.oid);
 	else
-		return EMPTY_TREE_SHA1_HEX;
+		return the_hash_algo->empty_tree_hex;
 }
 
 int index_has_changes(struct strbuf *sb)

@@ -33,14 +33,21 @@
 /* The maximum size for an object header. */
 #define MAX_HEADER_LEN 32
 
+#define EMPTY_BLOB_SHA1_BIN_LITERAL \
+	"\xe6\x9d\xe2\x9b\xb2\xd1\xd6\x43\x4b\x8b" \
+	"\x29\xae\x77\x5a\xd8\xc2\xe4\x8c\x53\x91"
+
+#define EMPTY_TREE_SHA1_BIN_LITERAL \
+	 "\x4b\x82\x5d\xc6\x42\xcb\x6e\xb9\xa0\x60" \
+	 "\xe5\x4b\xf8\xd6\x92\x88\xfb\xee\x49\x04"
+
+#define EMPTY_TREE_SHA1_HEX \
+	"4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+
 const unsigned char null_sha1[GIT_MAX_RAWSZ];
 const struct object_id null_oid;
-const struct object_id empty_tree_oid = {
-	EMPTY_TREE_SHA1_BIN_LITERAL
-};
-const struct object_id empty_blob_oid = {
-	EMPTY_BLOB_SHA1_BIN_LITERAL
-};
+const struct object_id empty_blob_sha1 = { EMPTY_BLOB_SHA1_BIN_LITERAL };
+const struct object_id empty_tree_sha1 = { EMPTY_TREE_SHA1_BIN_LITERAL };
 
 static void git_hash_sha1_init(void *ctx)
 {
@@ -83,6 +90,7 @@ const struct git_hash_algo hash_algos[GIT_HASH_NALGOS] = {
 		git_hash_unknown_final,
 		NULL,
 		NULL,
+		NULL,
 	},
 	{
 		"sha-1",
@@ -93,8 +101,9 @@ const struct git_hash_algo hash_algos[GIT_HASH_NALGOS] = {
 		git_hash_sha1_init,
 		git_hash_sha1_update,
 		git_hash_sha1_final,
-		&empty_tree_oid,
-		&empty_blob_oid,
+		&empty_tree_sha1,
+		&empty_blob_sha1,
+		EMPTY_TREE_SHA1_HEX,
 	},
 };
 
