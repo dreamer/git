@@ -130,7 +130,7 @@ static struct cached_object empty_cached_object = {
 
 static void init_empty_cached_object()
 {
-	if (is_null_oid(&empty_cached_object.oid))
+	if (unlikely(is_null_oid(&empty_cached_object.oid)))
 		oidcpy(&empty_cached_object.oid, the_hash_algo->empty_tree);
 }
 
