@@ -1214,4 +1214,16 @@ extern void unleak_memory(const void *ptr, size_t len);
 #define UNLEAK(var) do {} while (0)
 #endif
 
+/*
+ * kernel-like likely macro
+ *
+ */
+#if defined(__clang__) || defined(__GNUC__)
+#define likely(x)   (__builtin_expect(!!(x), 1))
+#define unlikely(x) (__builtin_expect(!!(x), 0))
+#else
+#define likely(x)   (!!(x))
+#define unlikely(x) (!!(x))
+#endif
+
 #endif
